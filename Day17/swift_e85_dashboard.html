@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Swift Fuel Dashboard · E85 Paradox</title>
+<style>
+  :root{
+    --bg:#0a0f1e;
+    --bg-grad: radial-gradient(ellipse 80% 60% at 50% -10%, #14204a 0%, #0a0f1e 55%);
+    --glass: rgba(255,255,255,0.045);
+    --glass-strong: rgba(255,255,255,0.07);
+    --glass-border: rgba(255,255,255,0.10);
+    --text: #e9edf8;
+    --text-dim: #8a93b3;
+    --text-faint: #5b6486;
+    --e85: #f59e0b;
+    --e85-soft: rgba(245,158,11,0.18);
+    --petrol: #3b82f6;
+    --petrol-soft: rgba(59,130,246,0.18);
+    --diesel: #9aa3b8;
+    --diesel-soft: rgba(154,163,184,0.16);
+    --cng: #22c55e;
+    --cng-soft: rgba(34,197,94,0.16);
+    --ev: #a855f7;
+    --ev-soft: rgba(168,85,247,0.18);
+    --good:#34d399;
+    --bad:#f87171;
+    --radius: 18px;
+    --font-ui: -apple-system, "Segoe UI", "Inter", system-ui, sans-serif;
+    --font-mono: "SFMono-Regular", Consolas, "Roboto Mono", "Liberation Mono", Menlo, monospace;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background: var(--bg-grad);
+    background-color: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    min-height:100vh;
+    padding: clamp(14px, 3vw, 40px);
+    -webkit-font-smoothing: antialiased;
+  }
+  .wrap{ max-width: 1280px; margin: 0 auto; display:flex; flex-direction:column; gap: clamp(16px,2.4vw,28px); }
+
+  /* ---------- Glass base ---------- */
+  .glass{
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.35), inset 0 1px 0 rgba(255,255,255,0.05);
+  }
+
+  /* ---------- Header ---------- */
+  header.glass{
+    padding: clamp(18px,2.4vw,30px) clamp(20px,3vw,38px);
+    display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:14px;
+    position:relative; overflow:hidden;
+  }
+  header.glass::before{
+    content:""; position:absolute; top:-60%; right:-10%; width:320px; height:320px;
+    background: radial-gradient(circle, var(--petrol-soft) 0%, transparent 70%);
+    pointer-events:none;
+  }
+  .brand{ display:flex; align-items:center; gap:14px; z-index:1; }
+  .brand-icon{
+    width:46px;height:46px;border-radius:12px;flex:none;
+    background: linear-gradient(135deg, var(--petrol), #1e3a8a);
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:0 6px 18px rgba(59,130,246,0.35);
+    font-size:22px;
+  }
+  .brand h1{ margin:0; font-size: clamp(17px,2vw,21px); font-weight:700; letter-spacing:0.2px; }
+  .brand .meta{ margin-top:3px; color:var(--text-dim); font-size: clamp(12.5px,1.4vw,14px); font-family: var(--font-mono); }
+  .brand .meta b{ color:var(--text); font-weight:600; }
+  .pill-row{ display:flex; gap:8px; flex-wrap:wrap; z-index:1; }
+  .pill{
+    font-family:var(--font-mono); font-size:12px; padding:6px 12px; border-radius:999px;
+    border:1px solid var(--glass-border); color:var(--text-dim); background: rgba(255,255,255,0.03);
+  }
+  .pill.live{ color:var(--petrol); border-color: rgba(59,130,246,0.4); background: var(--petrol-soft); }
+
+  /* ---------- Section heading ---------- */
+  .section-head{ display:flex; align-items:baseline; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:14px; }
+  .section-head h2{ margin:0; font-size: clamp(15px,1.8vw,18px); font-weight:700; }
+  .section-head .sub{ color:var(--text-dim); font-size:12.5px; font-family:var(--font-mono); }
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:11.5px;
+    letter-spacing:0.08em; color:var(--e85); text-transform:uppercase; margin-bottom:10px;
+  }
+  .eyebrow::before{ content:""; width:7px;height:7px;border-radius:50%; background:var(--e85); box-shadow:0 0 8px var(--e85); }
+
+  /* ---------- Paradox callout ---------- */
+  .paradox-banner{
+    padding: 16px 20px; border-radius: var(--radius);
+    background: linear-gradient(120deg, var(--e85-soft), var(--petrol-soft));
+    border: 1px solid rgba(245,158,11,0.25);
+    font-size: clamp(13px,1.5vw,14.5px); color: var(--text);
+    line-height:1.55;
+  }
+  .paradox-banner b{ color: var(--e85); }
+  .paradox-banner b.blue{ color: var(--petrol); }
+
+  /* ---------- KPI cards ---------- */
+  .kpi-grid{ display:grid; grid-template-columns: repeat(5, 1fr); gap: 14px; }
+  .kpi{
+    padding: 18px 18px 16px; position:relative; overflow:hidden;
+    display:flex; flex-direction:column; gap:8px; min-height:118px;
+  }
+  .kpi .klabel{ font-size:11px; letter-spacing:0.05em; color:var(--text-dim); text-transform:uppercase; font-family:var(--font-mono); }
+  .kpi .kvalue{ font-size: clamp(20px,2.4vw,26px); font-weight:700; font-family:var(--font-mono); letter-spacing:-0.02em; }
+  .kpi .ksub{ font-size:12px; color:var(--text-faint); }
+  .kpi.accent-petrol{ border-color: rgba(59,130,246,0.35); }
+  .kpi.accent-petrol .kvalue{ color: var(--petrol); }
+  .kpi.accent-e85{ border-color: rgba(245,158,11,0.35); }
+  .kpi.accent-e85 .kvalue{ color: var(--e85); }
+  .kpi.accent-bad .kvalue{ color: var(--bad); }
+  .kpi.accent-good .kvalue{ color: var(--good); }
+  .kpi .corner{ position:absolute; top:14px; right:16px; font-size:18px; opacity:0.85; }
+
+  /* ---------- Charts row ---------- */
+  .charts-row{ display:grid; grid-template-columns: 1.35fr 1fr; gap: 18px; align-items:stretch; }
+  .chart-card{ padding: 20px clamp(16px,2vw,26px) 22px; }
+  .axis-label{ fill: var(--text-faint); font-size:10.5px; font-family:var(--font-mono); }
+  .grid-line{ stroke: rgba(255,255,255,0.08); stroke-width:1; }
+  .bar-label{ fill: var(--text); font-size:12px; font-family:var(--font-mono); font-weight:600; text-anchor:middle; }
+  .fuel-label{ fill: var(--text-dim); font-size:11px; font-family:var(--font-ui); text-anchor:middle; }
+  .bar-rect{ cursor:pointer; transition: opacity 0.15s, filter 0.15s; transform-box: fill-box; transform-origin: bottom; }
+  .bar-rect:hover{ opacity:0.85; filter: brightness(1.15); }
+
+  .legend-row{ display:flex; flex-wrap:wrap; gap:12px; margin-top:14px; justify-content:center; }
+  .legend-chip{ display:flex; align-items:center; gap:6px; font-size:11.5px; color:var(--text-dim); font-family:var(--font-mono); }
+  .legend-dot{ width:9px;height:9px;border-radius:50%; flex:none; }
+  .donut-seg{ cursor:pointer; transition: stroke-width 0.15s, filter 0.15s; }
+  .donut-seg:hover{ stroke-width:38; filter:brightness(1.2); }
+
+  /* ---------- Line chart ---------- */
+  .line-card{ padding: 20px clamp(16px,2vw,26px) 22px; }
+  .age-line{ fill:none; stroke-width:2.6; stroke-linecap:round; }
+  .age-dot{ cursor:pointer; }
+  .ref-line{ stroke: var(--text-dim); stroke-width:1.4; stroke-dasharray:4 5; }
+  .ref-tag{ fill: var(--text); font-size:11px; font-family:var(--font-mono); font-weight:600; }
+
+  .bucket-row{ display:grid; grid-template-columns: repeat(4,1fr); gap:10px; margin-top:18px; }
+  .bucket{
+    padding:12px 10px; border-radius:12px; border:1px solid var(--glass-border);
+    background: rgba(255,255,255,0.02); text-align:center;
+  }
+  .bucket.current{ border-color: rgba(59,130,246,0.5); background: var(--petrol-soft); box-shadow: 0 0 18px rgba(59,130,246,0.25); }
+  .bucket .bname{ font-size:11px; color:var(--text-dim); font-family:var(--font-mono); }
+  .bucket.current .bname{ color: var(--petrol); }
+  .bucket .bvals{ margin-top:6px; font-size:13px; font-family:var(--font-mono); font-weight:600; }
+  .bucket .btag{ margin-top:4px; font-size:10px; color: var(--petrol); font-family:var(--font-mono); }
+
+  /* ---------- Gauge ---------- */
+  .gauge-card{ padding: 26px clamp(18px,2.5vw,30px) 28px; display:flex; flex-direction:column; align-items:center; text-align:center; }
+  .gauge-score{ font-family:var(--font-mono); font-size: clamp(34px,4.2vw,46px); font-weight:800; color:var(--e85); margin-top:-8px; line-height:1; }
+  .gauge-score span{ font-size:18px; color:var(--text-dim); font-weight:600; }
+  .gauge-tag{ font-size:12px; color:var(--text-dim); font-family:var(--font-mono); margin-top:2px; letter-spacing:0.04em; }
+  .verdict{ max-width: 520px; margin-top:14px; font-size: clamp(13px,1.5vw,14.5px); color:var(--text); line-height:1.6; }
+  .verdict b{ color:var(--e85); }
+  .gauge-fill{ stroke-dasharray:100; stroke-dashoffset:100; animation: fillGauge 1.6s 0.25s cubic-bezier(.2,.8,.2,1) forwards; }
+  @keyframes fillGauge{ to{ stroke-dashoffset: 43; } }
+
+  /* ---------- Fuel cards ---------- */
+  .fuel-grid{ display:grid; grid-template-columns: repeat(5,1fr); gap:14px; }
+  .fcard{
+    padding:18px 16px 18px; display:flex; flex-direction:column; gap:10px; position:relative;
+    border-top: 3px solid transparent;
+  }
+  .fcard h3{ margin:0; font-size:14.5px; display:flex; align-items:center; gap:8px; }
+  .fdot{ width:10px;height:10px;border-radius:50%; flex:none; }
+  .fstats{ display:flex; flex-wrap:wrap; gap:6px; font-family:var(--font-mono); font-size:10.5px; color:var(--text-dim); }
+  .fstats span{ background: rgba(255,255,255,0.04); border:1px solid var(--glass-border); padding:3px 7px; border-radius:7px; }
+  .flist{ margin:0; padding:0; list-style:none; font-size:12.3px; line-height:1.55; color:var(--text); }
+  .flist li{ margin-bottom:4px; }
+  .fbest{ font-size:11.6px; color:var(--text-dim); margin-top:auto; padding-top:8px; border-top:1px dashed var(--glass-border); }
+
+  .fcard.cng{ border-top-color: var(--cng); }
+  .fcard.diesel{ border-top-color: var(--diesel); }
+  .fcard.e85{ border-top-color: var(--e85); }
+  .fcard.ev{ border-top-color: var(--ev); }
+  .fcard.petrol{ border-top-color: var(--petrol); }
+
+  .fcard.highlight{
+    background: linear-gradient(160deg, var(--petrol-soft), var(--glass));
+    box-shadow: 0 0 0 1px rgba(59,130,246,0.5), 0 0 36px rgba(59,130,246,0.45), 0 8px 30px rgba(0,0,0,0.35);
+    transform: translateY(-2px);
+  }
+  .your-tag{
+    position:absolute; top:-10px; right:14px; background: var(--petrol); color:#fff; font-size:10px;
+    font-family:var(--font-mono); font-weight:700; padding:3px 9px; border-radius:999px;
+    box-shadow: 0 4px 14px rgba(59,130,246,0.5); letter-spacing:0.03em;
+  }
+
+  footer{ text-align:center; color:var(--text-faint); font-size:11px; font-family:var(--font-mono); padding: 6px 0 2px; }
+
+  /* ---------- Tooltip ---------- */
+  #tooltip{
+    position:fixed; pointer-events:none; z-index:50; background: rgba(15,20,38,0.95);
+    border:1px solid var(--glass-border); border-radius:9px; padding:7px 11px; font-size:12px;
+    font-family:var(--font-mono); color:var(--text); box-shadow:0 8px 20px rgba(0,0,0,0.45);
+    opacity:0; transform: translate(-50%,-130%); transition: opacity 0.1s; white-space:nowrap;
+  }
+  #tooltip.show{ opacity:1; }
+  #tooltip .tt-fuel{ font-weight:700; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 980px){
+    .kpi-grid{ grid-template-columns: repeat(2,1fr); }
+    .charts-row{ grid-template-columns: 1fr; }
+    .fuel-grid{ grid-template-columns: repeat(2,1fr); }
+    .bucket-row{ grid-template-columns: repeat(2,1fr); }
+  }
+  @media (max-width: 560px){
+    .kpi-grid{ grid-template-columns: 1fr 1fr; }
+    .fuel-grid{ grid-template-columns: 1fr; }
+    .brand h1{ font-size:16px; }
+    header.glass{ flex-direction:column; align-items:flex-start; }
+  }
+</style>
+</head>
+<body>
+<div id="tooltip"></div>
+<div class="wrap">
+
+  <!-- HEADER -->
+  <header class="glass">
+    <div class="brand">
+      <div class="brand-icon">🚗</div>
+      <div>
+        <h1>Maruti Suzuki Swift · Petrol · Age: 3y · 800km/mo</h1>
+        <div class="meta">City usage &nbsp;·&nbsp; <b>52</b> vehicles sampled &nbsp;·&nbsp; 5 fuel types compared</div>
+      </div>
+    </div>
+    <div class="pill-row">
+      <span class="pill live">● Petrol (E20) — your fuel</span>
+      <span class="pill">E85 paradox flagged</span>
+    </div>
+  </header>
+
+  <!-- PARADOX BANNER -->
+  <div class="paradox-banner">
+    ⚡ <b>The E85 Paradox:</b> E85 is <b>18% cheaper at the pump</b> (₹82 vs ₹100/L) — but because its mileage drops to
+    12.9 km/l from your Swift's 16.3 km/l, it ends up costing <b>3.6% more per kilometre to actually drive</b>
+    (₹6.37/km vs ₹6.15/km). For E85 to truly break even, it would need to be priced at
+    <b class="blue">₹79.11/L or lower</b> — not ₹82.
+  </div>
+
+  <!-- KPI CARDS -->
+  <section>
+    <div class="kpi-grid">
+      <div class="kpi glass accent-petrol">
+        <span class="corner">⛽</span>
+        <span class="klabel">Your fuel cost/km</span>
+        <span class="kvalue">₹6.15</span>
+        <span class="ksub">Petrol (E20) average</span>
+      </div>
+      <div class="kpi glass accent-e85">
+        <span class="corner">🌽</span>
+        <span class="klabel">E85 cost/km</span>
+        <span class="kvalue">₹6.37</span>
+        <span class="ksub">+₹0.22 vs your Petrol</span>
+      </div>
+      <div class="kpi glass accent-bad">
+        <span class="corner">📈</span>
+        <span class="klabel">E85 premium vs Petrol</span>
+        <span class="kvalue">+3.6%</span>
+        <span class="ksub">running cost, despite cheaper pump price</span>
+      </div>
+      <div class="kpi glass accent-good">
+        <span class="corner">⚖️</span>
+        <span class="klabel">E85 break-even price</span>
+        <span class="kvalue">₹79.11/L</span>
+        <span class="ksub">currently priced ₹2.89 above this</span>
+      </div>
+      <div class="kpi glass">
+        <span class="corner">🧾</span>
+        <span class="klabel">Your monthly fuel cost</span>
+        <span class="kvalue">₹4,923</span>
+        <span class="ksub">800 km/mo on Petrol (E20)</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- CHARTS ROW: BAR + DOUGHNUT -->
+  <div class="charts-row">
+
+    <div class="chart-card glass">
+      <div class="section-head">
+        <h2>Cost per Kilometre, by Fuel</h2>
+        <span class="sub">₹ / km · avg of 52 vehicles</span>
+      </div>
+      <svg viewBox="0 0 560 300" width="100%" style="overflow:visible;display:block;margin:0 auto;max-width:560px;">
+        <!-- grid lines -->
+        <line class="grid-line" x1="50" y1="260" x2="540" y2="260"/>
+        <line class="grid-line" x1="50" y1="185" x2="540" y2="185"/>
+        <line class="grid-line" x1="50" y1="110" x2="540" y2="110"/>
+        <line class="grid-line" x1="50" y1="35"  x2="540" y2="35"/>
+        <text class="axis-label" x="44" y="263" text-anchor="end">₹0</text>
+        <text class="axis-label" x="44" y="188" text-anchor="end">₹2</text>
+        <text class="axis-label" x="44" y="113" text-anchor="end">₹4</text>
+        <text class="axis-label" x="44" y="38"  text-anchor="end">₹6</text>
+
+        <!-- EV -->
+        <rect class="bar-rect" data-fuel="Electric (EV)" data-value="₹1.75/km" x="50"  y="194.3" width="70" height="65.7"  fill="var(--ev)" rx="6"/>
+        <text class="bar-label" x="85"  y="184.3">₹1.75</text>
+        <text class="fuel-label" x="85" y="278">EV</text>
+
+        <!-- CNG -->
+        <rect class="bar-rect" data-fuel="CNG" data-value="₹3.32/km" x="155" y="135.3" width="70" height="124.7" fill="var(--cng)" rx="6"/>
+        <text class="bar-label" x="190" y="125.3">₹3.32</text>
+        <text class="fuel-label" x="190" y="278">CNG</text>
+
+        <!-- Diesel -->
+        <rect class="bar-rect" data-fuel="Diesel" data-value="₹4.67/km" x="260" y="84.7"  width="70" height="175.3" fill="var(--diesel)" rx="6"/>
+        <text class="bar-label" x="295" y="74.7">₹4.67</text>
+        <text class="fuel-label" x="295" y="278">Diesel</text>
+
+        <!-- Petrol -->
+        <rect class="bar-rect" data-fuel="Petrol (E20) — yours" data-value="₹6.15/km" x="365" y="29.2"  width="70" height="230.8" fill="var(--petrol)" rx="6"/>
+        <text class="bar-label" x="400" y="19.2">₹6.15</text>
+        <text class="fuel-label" x="400" y="278" fill="var(--petrol)" style="font-weight:700;">Petrol ★</text>
+
+        <!-- E85 -->
+        <rect class="bar-rect" data-fuel="E85 (Flex-Fuel)" data-value="₹6.37/km" x="470" y="21.0"  width="70" height="239.0" fill="var(--e85)" rx="6"/>
+        <text class="bar-label" x="505" y="11.0">₹6.37</text>
+        <text class="fuel-label" x="505" y="278">E85</text>
+      </svg>
+    </div>
+
+    <div class="chart-card glass">
+      <div class="section-head">
+        <h2>CO₂ per Kilometre</h2>
+        <span class="sub">g / km</span>
+      </div>
+      <svg viewBox="0 0 240 240" width="100%" style="display:block;margin:0 auto;max-width:280px;">
+        <g transform="rotate(-90 120 120)">
+          <circle cx="120" cy="120" r="80" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="32"/>
+          <circle class="donut-seg" data-fuel="Electric (EV)" data-value="91 g/km" cx="120" cy="120" r="80" fill="none" stroke="var(--ev)"
+                  stroke-width="32" stroke-dasharray="72.16 502.65" stroke-dashoffset="0"/>
+          <circle class="donut-seg" data-fuel="CNG" data-value="125 g/km" cx="120" cy="120" r="80" fill="none" stroke="var(--cng)"
+                  stroke-width="32" stroke-dasharray="99.05 502.65" stroke-dashoffset="-72.16"/>
+          <circle class="donut-seg" data-fuel="Diesel" data-value="179 g/km" cx="120" cy="120" r="80" fill="none" stroke="var(--diesel)"
+                  stroke-width="32" stroke-dasharray="141.34 502.65" stroke-dashoffset="-171.21"/>
+          <circle class="donut-seg" data-fuel="Petrol (E20) — yours" data-value="171 g/km" cx="120" cy="120" r="80" fill="none" stroke="var(--petrol)"
+                  stroke-width="32" stroke-dasharray="134.86 502.65" stroke-dashoffset="-312.55"/>
+          <circle class="donut-seg" data-fuel="E85 (Flex-Fuel)" data-value="70 g/km" cx="120" cy="120" r="80" fill="none" stroke="var(--e85)"
+                  stroke-width="32" stroke-dasharray="55.19 502.65" stroke-dashoffset="-447.41"/>
+        </g>
+        <text x="120" y="115" text-anchor="middle" fill="var(--text)" style="font-family:var(--font-mono);font-size:20px;font-weight:700;">70g</text>
+        <text x="120" y="134" text-anchor="middle" fill="var(--text-dim)" style="font-family:var(--font-mono);font-size:10px;">E85 lowest</text>
+      </svg>
+      <div class="legend-row">
+        <span class="legend-chip"><span class="legend-dot" style="background:var(--ev)"></span>EV 91g</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:var(--cng)"></span>CNG 125g</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:var(--diesel)"></span>Diesel 179g</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:var(--petrol)"></span>Petrol 171g</span>
+        <span class="legend-chip"><span class="legend-dot" style="background:var(--e85)"></span>E85 70g</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- LINE CHART -->
+  <div class="line-card glass">
+    <div class="section-head">
+      <h2>Cost/km Trend by Vehicle Age</h2>
+      <span class="sub">0–12 years · linear trend per fuel</span>
+    </div>
+    <svg viewBox="0 0 700 300" width="100%" style="overflow:visible;display:block;" preserveAspectRatio="xMidYMid meet">
+      <!-- grid -->
+      <line class="grid-line" x1="60" y1="260" x2="680" y2="260"/>
+      <line class="grid-line" x1="60" y1="200" x2="680" y2="200"/>
+      <line class="grid-line" x1="60" y1="140" x2="680" y2="140"/>
+      <line class="grid-line" x1="60" y1="80"  x2="680" y2="80"/>
+      <line class="grid-line" x1="60" y1="20"  x2="680" y2="20"/>
+      <text class="axis-label" x="54" y="263" text-anchor="end">₹0</text>
+      <text class="axis-label" x="54" y="203" text-anchor="end">₹2</text>
+      <text class="axis-label" x="54" y="143" text-anchor="end">₹4</text>
+      <text class="axis-label" x="54" y="83"  text-anchor="end">₹6</text>
+      <text class="axis-label" x="54" y="23"  text-anchor="end">₹8</text>
+
+      <text class="axis-label" x="60"  y="278" text-anchor="middle">0y</text>
+      <text class="axis-label" x="215" y="278" text-anchor="middle">3y</text>
+      <text class="axis-label" x="370" y="278" text-anchor="middle">6y</text>
+      <text class="axis-label" x="525" y="278" text-anchor="middle">9y</text>
+      <text class="axis-label" x="680" y="278" text-anchor="middle">12y</text>
+
+      <!-- car age reference line -->
+      <line class="ref-line" x1="215" y1="20" x2="215" y2="260"/>
+      <text class="ref-tag" x="221" y="32" fill="var(--petrol)">your Swift · 3y</text>
+
+      <!-- trend lines -->
+      <path class="age-line" stroke="var(--ev)"     d="M60,209.9 L680,195.74"/>
+      <path class="age-line" stroke="var(--cng)"    d="M60,170.1 L680,144.95"/>
+      <path class="age-line" stroke="var(--diesel)" d="M60,141.41 L680,101.78"/>
+      <path class="age-line" stroke="var(--petrol)" stroke-width="3.4" d="M60,99.35 L680,52.13"/>
+      <path class="age-line" stroke="var(--e85)"    d="M60,76.13 L680,22.25"/>
+
+      <!-- markers at current age 3y -->
+      <circle class="age-dot" data-fuel="Electric (EV)"  data-value="≈ ₹1.79/km at 3y" cx="215" cy="206.37" r="5" fill="var(--ev)"/>
+      <circle class="age-dot" data-fuel="CNG"             data-value="≈ ₹3.21/km at 3y" cx="215" cy="163.81" r="5" fill="var(--cng)"/>
+      <circle class="age-dot" data-fuel="Diesel"          data-value="≈ ₹4.28/km at 3y" cx="215" cy="131.51" r="5" fill="var(--diesel)"/>
+      <circle class="age-dot" data-fuel="Petrol — yours"  data-value="≈ ₹5.75/km at 3y" cx="215" cy="87.54" r="6.5" fill="var(--petrol)" stroke="#fff" stroke-width="1.5"/>
+      <circle class="age-dot" data-fuel="E85 (Flex-Fuel)" data-value="≈ ₹6.58/km at 3y" cx="215" cy="62.65" r="5" fill="var(--e85)"/>
+    </svg>
+    <div class="legend-row">
+      <span class="legend-chip"><span class="legend-dot" style="background:var(--ev)"></span>EV</span>
+      <span class="legend-chip"><span class="legend-dot" style="background:var(--cng)"></span>CNG</span>
+      <span class="legend-chip"><span class="legend-dot" style="background:var(--diesel)"></span>Diesel</span>
+      <span class="legend-chip"><span class="legend-dot" style="background:var(--petrol)"></span>Petrol (yours)</span>
+      <span class="legend-chip"><span class="legend-dot" style="background:var(--e85)"></span>E85</span>
+    </div>
+
+    <!-- AGE BUCKETS -->
+    <div class="bucket-row">
+      <div class="bucket">
+        <div class="bname">New · 0–2y</div>
+        <div class="bvals">₹4.23/km<br>maint ₹0.35</div>
+      </div>
+      <div class="bucket current">
+        <div class="bname">Mid-life · 3–5y</div>
+        <div class="bvals">₹4.09/km<br>maint ₹0.56</div>
+        <div class="btag">★ your Swift is here</div>
+      </div>
+      <div class="bucket">
+        <div class="bname">Aged · 6–9y</div>
+        <div class="bvals">₹5.17/km<br>maint ₹0.65</div>
+      </div>
+      <div class="bucket">
+        <div class="bname">Old · 10+y</div>
+        <div class="bvals">₹5.29/km<br>maint ₹1.41</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAUGE -->
+  <div class="gauge-card glass">
+    <div class="section-head" style="justify-content:center;">
+      <h2>E85 Suitability Score</h2>
+    </div>
+    <svg viewBox="0 0 240 145" width="280" style="overflow:visible;">
+      <path d="M30,120 A90,90 0 0,1 210,120" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="18" stroke-linecap="round" pathLength="100"/>
+      <path class="gauge-fill" d="M30,120 A90,90 0 0,1 210,120" fill="none" stroke="var(--e85)" stroke-width="18" stroke-linecap="round" pathLength="100"/>
+      <text x="30"  y="138" class="axis-label" text-anchor="middle">0</text>
+      <text x="120" y="22"  class="axis-label" text-anchor="middle">5</text>
+      <text x="210" y="138" class="axis-label" text-anchor="middle">10</text>
+    </svg>
+    <div class="gauge-score">5.7<span>/10</span></div>
+    <div class="gauge-tag">cost 0/4 · CO₂ 3/3 · refuel 2/2 · maint 0.7/1</div>
+    <p class="verdict">
+      <b>Verdict:</b> E85 wins decisively on emissions and refuels just as fast as petrol, but its running-cost
+      penalty is real — switching would push your monthly fuel bill from <b>₹4,923 to ₹5,099</b>. For a stock
+      Petrol Swift doing 800 km/mo in the city, E85 isn't a smart swap yet.
+    </p>
+  </div>
+
+  <!-- FUEL CARDS -->
+  <section>
+    <div class="section-head">
+      <h2>Fuel-by-Fuel Breakdown</h2>
+      <span class="sub">across 52 sampled vehicles</span>
+    </div>
+    <div class="fuel-grid">
+
+      <div class="fcard glass ev">
+        <h3><span class="fdot" style="background:var(--ev)"></span>Electric (EV)</h3>
+        <div class="fstats"><span>₹1.75/km</span><span>91g CO₂</span><span>₹0.23 maint</span><span>45 min charge</span></div>
+        <ul class="flist">
+          <li>✅ Lowest running cost — ₹1.75/km</li>
+          <li>✅ Minimal upkeep — ₹0.23/km maintenance</li>
+          <li>❌ Slow recharge — 45 min average</li>
+          <li>❌ Charging infra still patchy citywide</li>
+        </ul>
+        <div class="fbest">🚗 Best for: short city hops with home charging</div>
+      </div>
+
+      <div class="fcard glass cng">
+        <h3><span class="fdot" style="background:var(--cng)"></span>CNG</h3>
+        <div class="fstats"><span>₹3.32/km</span><span>125g CO₂</span><span>₹0.66 maint</span><span>8 min refuel</span></div>
+        <ul class="flist">
+          <li>✅ Cheapest fossil option — ₹3.32/km</li>
+          <li>✅ Cleaner burn than petrol or diesel</li>
+          <li>❌ Boot space eaten by the cylinder</li>
+          <li>❌ Fewer filling stations than petrol pumps</li>
+        </ul>
+        <div class="fbest">🚗 Best for: high-mileage city driving on a budget</div>
+      </div>
+
+      <div class="fcard glass diesel">
+        <h3><span class="fdot" style="background:var(--diesel)"></span>Diesel</h3>
+        <div class="fstats"><span>₹4.67/km</span><span>179g CO₂</span><span>₹1.00 maint</span><span>5 min refuel</span></div>
+        <ul class="flist">
+          <li>✅ Strong choice for long highway runs</li>
+          <li>✅ Decent mileage — ~19.6 km/l</li>
+          <li>❌ Highest maintenance — ₹1.00/km</li>
+          <li>❌ Highest CO₂ of all five fuels — 179g/km</li>
+        </ul>
+        <div class="fbest">🚗 Best for: high-distance highway driving</div>
+      </div>
+
+      <div class="fcard glass petrol highlight">
+        <span class="your-tag">YOUR FUEL</span>
+        <h3><span class="fdot" style="background:var(--petrol)"></span>Petrol (E20)</h3>
+        <div class="fstats"><span>₹6.15/km</span><span>171g CO₂</span><span>₹0.47 maint</span><span>5 min refuel</span></div>
+        <ul class="flist">
+          <li>✅ Refuels anywhere in under 5 minutes</li>
+          <li>✅ Low, predictable upkeep — ₹0.47/km</li>
+          <li>❌ Second-priciest fuel per km — ₹6.15</li>
+          <li>❌ E20 blend trims mileage to 16.3 km/l</li>
+        </ul>
+        <div class="fbest">🚗 Best for: city driving like your Swift — easy refuels, low upkeep</div>
+      </div>
+
+      <div class="fcard glass e85">
+        <h3><span class="fdot" style="background:var(--e85)"></span>E85 (Flex-Fuel)</h3>
+        <div class="fstats"><span>₹6.37/km</span><span>70g CO₂</span><span>₹0.46 maint</span><span>5 min refuel</span></div>
+        <ul class="flist">
+          <li>✅ Lowest CO₂ of any fuel here — 70g/km</li>
+          <li>✅ Refuels as fast as petrol — 5 min</li>
+          <li>❌ Costliest per km despite the cheaper pump price</li>
+          <li>❌ Mileage falls to 12.9 km/l, erasing the 18% pump discount</li>
+        </ul>
+        <div class="fbest">🚗 Best for: flex-fuel vehicles where E85 is deeply subsidised — not yet for a stock Swift</div>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>Computed from day17_e85_dataset_optimised.csv · 52 records · 5 fuel types</footer>
+</div>
+
+<script>
+  const tooltip = document.getElementById('tooltip');
+  const hoverables = document.querySelectorAll('.bar-rect, .donut-seg, .age-dot');
+
+  hoverables.forEach(el => {
+    el.addEventListener('mouseenter', (e) => {
+      const fuel = el.getAttribute('data-fuel');
+      const value = el.getAttribute('data-value');
+      tooltip.innerHTML = '<span class="tt-fuel">' + fuel + '</span><br>' + value;
+      tooltip.classList.add('show');
+    });
+    el.addEventListener('mousemove', (e) => {
+      tooltip.style.left = e.clientX + 'px';
+      tooltip.style.top = e.clientY + 'px';
+    });
+    el.addEventListener('mouseleave', () => {
+      tooltip.classList.remove('show');
+    });
+  });
+
+  // entrance animation for bars
+  window.addEventListener('DOMContentLoaded', () => {
+    document.querySelectorAll('.bar-rect').forEach((bar, i) => {
+      bar.style.transform = 'scaleY(0)';
+      bar.style.opacity = '0';
+      setTimeout(() => {
+        bar.style.transition = 'transform 0.6s cubic-bezier(.2,.8,.2,1), opacity 0.4s';
+        bar.style.transform = 'scaleY(1)';
+        bar.style.opacity = '1';
+      }, 80 + i * 70);
+    });
+  });
+</script>
+</body>
+</html>
